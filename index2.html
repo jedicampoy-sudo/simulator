@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCCM Acoustic Simulator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0d14;
+    --bg2: #0f1420;
+    --bg3: #141924;
+    --panel: #181e2e;
+    --border: #242d42;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #39d353;
+    --warn: #ffd166;
+    --text: #c8d6e5;
+    --text2: #7f8fa4;
+    --text3: #4a5568;
+    --red: #ff4757;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Header */
+  .header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 10;
+  }
+  .header-logo {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+  .header-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .badge {
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-family: var(--mono);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .badge-blue { background: rgba(0,212,255,0.1); color: var(--accent); }
+  .badge-orange { background: rgba(255,107,53,0.1); color: var(--accent2); }
+
+  /* Layout */
+  .app {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 280px 1fr 300px;
+    min-height: 0;
+  }
+
+  /* Panels */
+  .left-panel, .right-panel {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 16px;
+  }
+  .right-panel { border-right: none; border-left: 1px solid var(--border); }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text2);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::after { content:''; flex:1; height:1px; background: var(--border); }
+
+  .control-group { margin-bottom: 18px; }
+  .control-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin-bottom: 6px;
+    color: var(--text2);
+  }
+  .control-label span { color: var(--accent); font-family: var(--mono); }
+
+  input[type=range] { width: 100%; cursor: pointer; accent-color: var(--accent); }
+
+  /* Buttons */
+  .btn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 15px; }
+  .freq-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 15px; }
+  .btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    padding: 6px;
+    font-size: 10px;
+    font-family: var(--mono);
+    cursor: pointer;
+    text-align: center;
+    border-radius: 4px;
+  }
+  .btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.05); }
+
+  /* Main Area */
+  .canvas-area {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: #05070a;
+  }
+  .canvas-toolbar {
+    padding: 8px 16px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  canvas { flex: 1; width: 100%; cursor: crosshair; }
+
+  /* Metrics */
+  .metric-card {
+    background: var(--bg3);
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    margin-bottom: 10px;
+  }
+  .metric-val { font-size: 20px; font-weight: 700; color: var(--accent); font-family: var(--mono); }
+  
+  .table { width: 100%; border-collapse: collapse; font-size: 10px; font-family: var(--mono); }
+  .table th { text-align: left; padding: 4px; border-bottom: 1px solid var(--border); color: var(--text2); }
+  .table td { padding: 4px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">◈ CCCM-SIM</div>
+  <div class="header-title">Acoustic Simulator — Mindoro Facility</div>
+  <div style="flex:1"></div>
+  <div class="badge badge-blue">T45-DSP Arrays</div>
+  <div class="badge badge-orange">GT508A Fills</div>
+</div>
+
+<div class="app">
+  <aside class="left-panel">
+    <div class="section-title">Projection Mode</div>
+    <div class="btn-grid">
+      <div class="btn active" id="v-top" onclick="setView('top')">TOP VIEW</div>
+      <div class="btn" id="v-side" onclick="setView('side')">SIDE VIEW</div>
+      <div class="btn" id="v-freq" onclick="setView('freq')">ANALYZER</div>
+      <div class="btn" id="v-delay" onclick="setView('delay')">DELAY MAP</div>
+    </div>
+
+    <div class="section-title">Test Frequency</div>
+    <div class="freq-grid">
+      <div class="btn" onclick="setFreq(125)">125Hz</div>
+      <div class="btn" onclick="setFreq(500)">500Hz</div>
+      <div class="btn active" id="f-1k" onclick="setFreq(1000)">1kHz</div>
+      <div class="btn" onclick="setFreq(4000)">4kHz</div>
+    </div>
+
+    <div class="section-title">Main System (T45-DSP)</div>
+    <div class="control-group">
+      <div class="control-label">Array Height <span id="val-t45h">5.5m</span></div>
+      <input type="range" min="4" max="8" step="0.1" value="5.5" oninput="updateSys('t45', 'h', this.value)">
+    </div>
+    <div class="control-group">
+      <div class="control-label">Array Tilt <span id="val-t45t">-5°</span></div>
+      <input type="range" min="-15" max="0" step="0.5" value="-5" oninput="updateSys('t45', 't', this.value)">
+    </div>
+
+    <div class="section-title">Front Fills (GT508A)</div>
+    <div class="control-group">
+      <div class="control-label">Fill Level <span id="val-ffl">-6dB</span></div>
+      <input type="range" min="-24" max="0" step="1" value="-6" oninput="updateSys('ff', 'l', this.value)">
+    </div>
+    <div class="control-group">
+      <div class="control-label">Electronic Delay <span id="val-ffd">0.0ms</span></div>
+      <input type="range" min="0" max="20" step="0.1" value="0" oninput="updateSys('ff', 'd', this.value)">
+    </div>
+  </aside>
+
+  <main class="canvas-area">
+    <div class="canvas-toolbar">
+      <div id="status-view">MODE: TOP VIEW SPL</div>
+      <div id="status-cursor" style="color: var(--accent2)">Hover over grid for SPL data</div>
+    </div>
+    <canvas id="mainCanvas"></canvas>
+  </main>
+
+  <aside class="right-panel">
+    <div class="section-title">Live Statistics</div>
+    <div class="metric-card">
+      <div class="control-label">AVERAGE SPL</div>
+      <div class="metric-val" id="stat-avg">0.0 <small>dB</small></div>
+    </div>
+    <div class="metric-card">
+      <div class="control-label">UNIFORMITY (Δ)</div>
+      <div class="metric-val" id="stat-var" style="color:var(--warn)">±0.0 <small>dB</small></div>
+    </div>
+
+    <div class="section-title">Calculated Delays</div>
+    <table class="table">
+      <thead><tr><th>Source</th><th>Distance</th><th>Time</th></tr></thead>
+      <tbody id="delay-table"></tbody>
+    </table>
+
+    <div class="section-title" style="margin-top:20px">Smaart RTA Reference</div>
+    <p style="font-size:10px; color:var(--text2); line-height:1.6;">
+      Target response for CCCM Sanctuary should be flat ±3dB from 250Hz to 4kHz. Use a measurement mic at 1.2m height at center of house.
+    </p>
+  </aside>
+</div>
+
+<script>
+/**
+ * CCCM ACOUSTIC SIMULATOR - LOGIC ENGINE
+ */
+
+const ROOM = {
+  width: 24.3,
+  depth: 28.5,
+  seating: 20.0,
+  temp: 28, // Celsius
+  get speedOfSound() { return 331.3 + (0.606 * this.temp); }
+};
+
+const STATE = {
+  view: 'top',
+  freq: 1000,
+  t45: { h: 5.5, t: -5, l: 0, d: 0 },
+  ff: { h: 1.5, t: -10, l: -6, d: 0 },
+  sub: { h: 0.4, l: 0, d: 0 },
+  mouse: { x: 0, y: 0, active: false }
+};
+
+let canvas, ctx;
+
+function init() {
+  canvas = document.getElementById('mainCanvas');
+  ctx = canvas.getContext('2d');
+  window.addEventListener('resize', resize);
+  
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width * ROOM.width;
+    const y = (e.clientY - rect.top) / rect.height * ROOM.depth;
+    STATE.mouse = { x, y, active: true };
+    updateCursorInfo();
+    render();
+  });
+
+  resize();
+  updateDelays();
+  loop();
+}
+
+function resize() {
+  canvas.width = canvas.clientWidth * window.devicePixelRatio;
+  canvas.height = canvas.clientHeight * window.devicePixelRatio;
+  render();
+}
+
+function updateSys(sys, prop, val) {
+  STATE[sys][prop] = parseFloat(val);
+  document.getElementById(`val-${sys}${prop}`).textContent = val + (prop === 't' ? '°' : prop === 'l' ? 'dB' : prop === 'd' ? 'ms' : 'm');
+  updateDelays();
+  render();
+}
+
+function setFreq(f) {
+  STATE.freq = f;
+  document.querySelectorAll('.freq-grid .btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  render();
+}
+
+function setView(v) {
+  STATE.view = v;
+  document.querySelectorAll('.btn-grid .btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`v-${v}`).classList.add('active');
+  document.getElementById('status-view').textContent = `MODE: ${v.toUpperCase()} VIEW`;
+  render();
+}
+
+function getSPLAtPoint(px, py, freq) {
+  // Simplified Physics Engine: Inverse Square Law + Directivity
+  const sources = [
+    { x: 2, y: 20, z: STATE.t45.h, spl1m: 130 + STATE.t45.l, type: 'array' },   // Left Main
+    { x: 22.3, y: 20, z: STATE.t45.h, spl1m: 130 + STATE.t45.l, type: 'array' },// Right Main
+    { x: 12.1, y: 20.5, z: STATE.ff.h, spl1m: 120 + STATE.ff.l, type: 'point' } // Center Fill
+  ];
+
+  let totalIntensity = 0;
+  sources.forEach(s => {
+    const d = Math.sqrt(Math.pow(px - s.x, 2) + Math.pow(py - s.y, 2) + Math.pow(1.2 - s.z, 2));
+    let loss = 20 * Math.log10(Math.max(d, 1));
+    
+    // Directivity Factor (Simplified)
+    if (s.type === 'array') {
+      const angleToReceiver = Math.atan2(1.2 - s.z, Math.abs(20 - py)) * 180 / Math.PI;
+      const offAxis = Math.abs(angleToReceiver - STATE.t45.t);
+      loss += (offAxis * 0.8); // 0.8dB per degree off-axis
+    }
+
+    const spl = s.spl1m - loss;
+    totalIntensity += Math.pow(10, spl / 10);
+  });
+
+  return 10 * Math.log10(totalIntensity);
+}
+
+function updateDelays() {
+  const c = ROOM.speedOfSound;
+  const mainDist = Math.sqrt(Math.pow(12.1 - 2, 2) + Math.pow(10 - 20, 2));
+  const fillDist = Math.sqrt(Math.pow(12.1 - 12.1, 2) + Math.pow(10 - 20.5, 2));
+  
+  const mainTime = (mainDist / c) * 1000;
+  const fillTime = (fillDist / c) * 1000;
+  const idealDelay = Math.max(0, mainTime - fillTime).toFixed(1);
+
+  const html = `
+    <tr><td>Main Array</td><td>${mainDist.toFixed(1)}m</td><td>${mainTime.toFixed(1)}ms</td></tr>
+    <tr><td>Front Fill</td><td>${fillDist.toFixed(1)}m</td><td>${fillTime.toFixed(1)}ms</td></tr>
+    <tr style="color:var(--accent3)"><td>Recommended Δ</td><td>-</td><td>${idealDelay}ms</td></tr>
+  `;
+  document.getElementById('delay-table').innerHTML = html;
+}
+
+function updateCursorInfo() {
+  if (!STATE.mouse.active) return;
+  const spl = getSPLAtPoint(STATE.mouse.x, STATE.mouse.y, STATE.freq);
+  document.getElementById('status-cursor').textContent = `POS: ${STATE.mouse.x.toFixed(1)}m, ${STATE.mouse.y.toFixed(1)}m | SPL: ${spl.toFixed(1)} dB`;
+}
+
+function render() {
+  if (!ctx) return;
+  const dpr = window.devicePixelRatio;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  const scaleX = canvas.width / ROOM.width;
+  const scaleY = canvas.height / ROOM.depth;
+
+  if (STATE.view === 'top') {
+    // Render SPL Heatmap
+    const step = 0.8;
+    for (let x = 0; x < ROOM.width; x += step) {
+      for (let y = 0; y < ROOM.depth; y += step) {
+        const spl = getSPLAtPoint(x, y, STATE.freq);
+        const hue = Math.max(0, 240 - (spl - 70) * 5); // 70dB=Blue, 110dB=Red
+        ctx.fillStyle = `hsla(${hue}, 80%, 50%, 0.6)`;
+        ctx.fillRect(x * scaleX, y * scaleY, step * scaleX, step * scaleY);
+      }
+    }
+
+    // Grid Labels
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    for(let i=0; i<ROOM.width; i+=5) {
+      ctx.beginPath(); ctx.moveTo(i*scaleX, 0); ctx.lineTo(i*scaleX, canvas.height); ctx.stroke();
+    }
+  } else if (STATE.view === 'side') {
+    ctx.fillStyle = 'white';
+    ctx.font = '20px Space Mono';
+    ctx.fillText("SIDE PROFILE VIEW", 50, 50);
+    // Visual representation of rake and height
+    ctx.strokeStyle = varColor('--accent');
+    ctx.strokeRect(50, 100, canvas.width - 100, canvas.height - 200);
+  }
+
+  // Draw Speakers
+  ctx.fillStyle = 'white';
+  const spkSize = 10 * dpr;
+  // Left Array
+  ctx.fillRect(2 * scaleX - spkSize/2, 20 * scaleY - spkSize/2, spkSize, spkSize);
+  // Right Array
+  ctx.fillRect(22.3 * scaleX - spkSize/2, 20 * scaleY - spkSize/2, spkSize, spkSize);
+}
+
+function varColor(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name);
+}
+
+function loop() {
+  // Logic for animations if needed
+  requestAnimationFrame(loop);
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
