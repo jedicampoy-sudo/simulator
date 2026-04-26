@@ -1,0 +1,1997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCCM Acoustic Simulator — Cornerstone Community Church Mindoro</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0d14;
+    --bg2: #0f1420;
+    --bg3: #141924;
+    --panel: #181e2e;
+    --border: #242d42;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #39d353;
+    --warn: #ffd166;
+    --text: #c8d6e5;
+    --text2: #7f8fa4;
+    --text3: #4a5568;
+    --red: #ff4757;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  .header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .header-logo {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .header-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .header-sub {
+    font-size: 11px;
+    color: var(--text2);
+    font-family: var(--mono);
+  }
+  .badge {
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: 1px;
+  }
+  .badge-blue { background: rgba(0,212,255,0.12); color: var(--accent); border: 1px solid rgba(0,212,255,0.25); }
+  .badge-orange { background: rgba(255,107,53,0.12); color: var(--accent2); border: 1px solid rgba(255,107,53,0.25); }
+
+  /* Layout */
+  .app {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 260px 1fr 280px;
+    grid-template-rows: 1fr;
+    gap: 0;
+    min-height: 0;
+    height: calc(100vh - 48px);
+  }
+
+  /* Left Panel */
+  .left-panel {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 12px;
+  }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text2);
+    text-transform: uppercase;
+    padding: 8px 0 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+  }
+
+  .control-group {
+    margin-bottom: 14px;
+  }
+
+  .control-label {
+    font-size: 11px;
+    color: var(--text2);
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .control-label span {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+  }
+
+  input[type=range] {
+    width: 100%;
+    height: 4px;
+    appearance: none;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 0;
+  }
+  .toggle-label {
+    font-size: 11px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .dot-blue { background: var(--accent); }
+  .dot-orange { background: var(--accent2); }
+  .dot-green { background: var(--accent3); }
+  .dot-yellow { background: var(--warn); }
+
+  .toggle {
+    width: 36px; height: 18px;
+    background: var(--border);
+    border-radius: 9px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle.on-orange { background: var(--accent2); }
+  .toggle.on-green { background: var(--accent3); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 14px; height: 14px;
+    background: white;
+    border-radius: 50%;
+    top: 2px; left: 2px;
+    transition: transform 0.2s;
+  }
+  .toggle.on::after, .toggle.on-orange::after, .toggle.on-green::after {
+    transform: translateX(18px);
+  }
+
+  select {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: var(--sans);
+    cursor: pointer;
+    outline: none;
+  }
+  select:focus { border-color: var(--accent); }
+
+  .freq-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+  .freq-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    padding: 5px 2px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-family: var(--mono);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .freq-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .freq-btn.active { background: rgba(0,212,255,0.15); border-color: var(--accent); color: var(--accent); }
+
+  .view-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  .view-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    padding: 7px 4px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: var(--mono);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+  .view-btn.active {
+    background: rgba(0,212,255,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Center: Canvas */
+  .canvas-area {
+    position: relative;
+    background: var(--bg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .canvas-toolbar {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .canvas-toolbar .info-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text2);
+  }
+  .canvas-toolbar .info-val {
+    font-family: var(--mono);
+    color: var(--accent);
+    font-size: 11px;
+  }
+
+  canvas {
+    flex: 1;
+    width: 100%;
+    display: block;
+  }
+
+  .legend {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .legend-title {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text2);
+    letter-spacing: 1px;
+  }
+  .legend-scale {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .spl-bar {
+    width: 140px;
+    height: 10px;
+    border-radius: 2px;
+  }
+  .legend-labels {
+    display: flex;
+    justify-content: space-between;
+    width: 140px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text2);
+  }
+  .legend-items {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-left: 10px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--text2);
+  }
+  .legend-swatch { width:14px; height:8px; border-radius:2px; }
+
+  /* Right Panel */
+  .right-panel {
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 12px;
+  }
+
+  .metric-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .metric-title {
+    font-size: 10px;
+    color: var(--text2);
+    margin-bottom: 6px;
+    font-family: var(--mono);
+    letter-spacing: 0.5px;
+  }
+  .metric-value {
+    font-family: var(--mono);
+    font-size: 22px;
+    color: var(--accent);
+    font-weight: 700;
+    line-height: 1;
+  }
+  .metric-unit {
+    font-size: 11px;
+    color: var(--text2);
+    margin-left: 4px;
+  }
+  .metric-sub {
+    font-size: 10px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+
+  .metric-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .meter-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .meter-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  .point-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+    margin-top: 8px;
+  }
+  .point-table th {
+    text-align: left;
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .point-table td {
+    padding: 4px 6px;
+    border-bottom: 1px solid rgba(36,45,66,0.5);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+  .point-table tr:hover td { background: rgba(0,212,255,0.05); }
+
+  .spl-chip {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+  }
+  .spl-high { background: rgba(57,211,83,0.15); color: var(--accent3); }
+  .spl-med  { background: rgba(255,209,102,0.15); color: var(--warn); }
+  .spl-low  { background: rgba(255,71,87,0.15); color: var(--red); }
+
+  .delay-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+  }
+  .delay-table th {
+    text-align: left;
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .delay-table td {
+    padding: 4px 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    border-bottom: 1px solid rgba(36,45,66,0.5);
+  }
+
+  .math-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 10px;
+    margin: 6px 0;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    line-height: 1.8;
+  }
+
+  .cursor-info {
+    font-family: var(--mono);
+    font-size: 10px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 8px;
+    color: var(--text2);
+    pointer-events: none;
+  }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  .smaart-badge {
+    background: rgba(255,107,53,0.1);
+    border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 10px;
+    color: var(--accent2);
+    font-family: var(--mono);
+    margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">◈ CCCM-SIM</div>
+  <div>
+    <div class="header-title">Cornerstone Community Church — Mindoro Acoustic Simulator</div>
+    <div class="header-sub">24.325m × 28.5m × 8m ceiling · Carpeted floor · Gypsum board ceiling</div>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+    <span class="badge badge-blue">T45-DSP × 4</span>
+    <span class="badge badge-orange">GT508A × 2</span>
+    <span class="badge badge-blue">MA118 × 2</span>
+    <span class="badge" style="background:rgba(57,211,83,0.1);color:var(--accent3);border:1px solid rgba(57,211,83,0.25);">Physics-Accurate SPL</span>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+
+    <div class="smaart-badge">📱 Smaart RTA Pro compatible — use these values as target curves</div>
+
+    <div class="section-title">View Mode</div>
+    <div class="view-buttons">
+      <div class="view-btn active" id="vbtn-top" onclick="setView('top')">TOP VIEW</div>
+      <div class="view-btn" id="vbtn-side" onclick="setView('side')">SIDE VIEW</div>
+      <div class="view-btn" id="vbtn-freq" onclick="setView('freq')">FREQ RESP</div>
+      <div class="view-btn" id="vbtn-delay" onclick="setView('delay')">DELAY MAP</div>
+    </div>
+
+    <div class="section-title">Frequency Band</div>
+    <div class="freq-buttons" id="freq-buttons">
+      <div class="freq-btn" onclick="setFreq(63)">63Hz</div>
+      <div class="freq-btn" onclick="setFreq(125)">125Hz</div>
+      <div class="freq-btn" onclick="setFreq(250)">250Hz</div>
+      <div class="freq-btn" onclick="setFreq(500)">500Hz</div>
+      <div class="freq-btn active" onclick="setFreq(1000)">1kHz</div>
+      <div class="freq-btn" onclick="setFreq(2000)">2kHz</div>
+      <div class="freq-btn" onclick="setFreq(4000)">4kHz</div>
+      <div class="freq-btn" onclick="setFreq(8000)">8kHz</div>
+    </div>
+
+    <div class="section-title" style="margin-top:12px">Audience Height</div>
+    <div class="control-group">
+      <div class="control-label">Receiver Height <span id="lbl-height">1.2 m</span></div>
+      <input type="range" min="1.0" max="1.8" step="0.1" value="1.2" id="sl-height" oninput="updateHeight(this.value)">
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:3px;font-family:var(--mono);">
+        <span>1.0m seated</span><span>1.6m standing</span>
+      </div>
+    </div>
+
+    <div class="section-title">Speaker Controls</div>
+
+    <div class="toggle-row">
+      <div class="toggle-label"><div class="dot dot-blue"></div>T45-DSP Arrays (×2/side)</div>
+      <div class="toggle on" id="tog-t45" onclick="toggleSpeaker('t45')"></div>
+    </div>
+    <div class="control-group" style="padding-left:14px">
+      <div class="control-label">Mount Height <span id="lbl-t45h">5.5 m</span></div>
+      <input type="range" min="4" max="7" step="0.25" value="5.5" id="sl-t45h" oninput="updateT45Height(this.value)">
+      <div class="control-label" style="margin-top:8px">Splay / Tilt <span id="lbl-t45tilt">-5°</span></div>
+      <input type="range" min="-15" max="0" step="0.5" value="-5" id="sl-t45tilt" oninput="updateT45Tilt(this.value)">
+      <div class="control-label" style="margin-top:8px">Level <span id="lbl-t45lv">0 dB</span></div>
+      <input type="range" min="-20" max="0" step="1" value="0" id="sl-t45lv" oninput="updateLevel('t45', this.value)">
+    </div>
+
+    <div class="toggle-row">
+      <div class="toggle-label"><div class="dot dot-orange"></div>GT508A Front-Fill (×2)</div>
+      <div class="toggle on on-orange" id="tog-ff" onclick="toggleSpeaker('ff')"></div>
+    </div>
+    <div class="control-group" style="padding-left:14px">
+      <div class="control-label">Height <span id="lbl-ffh">1.8 m</span></div>
+      <input type="range" min="0.5" max="3" step="0.1" value="1.8" id="sl-ffh" oninput="updateFFHeight(this.value)">
+      <div class="control-label" style="margin-top:8px">Tilt <span id="lbl-fftilt">-10°</span></div>
+      <input type="range" min="-20" max="0" step="1" value="-10" id="sl-fftilt" oninput="updateFFTilt(this.value)">
+      <div class="control-label" style="margin-top:8px">Delay <span id="lbl-ffdelay">0.0 ms</span></div>
+      <input type="range" min="0" max="50" step="0.5" value="0" id="sl-ffdelay" oninput="updateDelay('ff', this.value)">
+      <div class="control-label" style="margin-top:8px">Level <span id="lbl-fflv">-6 dB</span></div>
+      <input type="range" min="-20" max="0" step="1" value="-6" id="sl-fflv" oninput="updateLevel('ff', this.value)">
+    </div>
+
+    <div class="toggle-row">
+      <div class="toggle-label"><div class="dot dot-green"></div>MA118 Subwoofers (×2)</div>
+      <div class="toggle on on-green" id="tog-sub" onclick="toggleSpeaker('sub')"></div>
+    </div>
+    <div class="control-group" style="padding-left:14px">
+      <div class="control-label">LPF Preset <span id="lbl-sublpf">100Hz</span></div>
+      <select id="sel-sublpf" onchange="updateSubLPF(this.value)">
+        <option value="80">80 Hz</option>
+        <option value="100" selected>100 Hz</option>
+        <option value="120">120 Hz</option>
+      </select>
+      <div class="control-label" style="margin-top:8px">Delay <span id="lbl-subdelay">0.0 ms</span></div>
+      <input type="range" min="0" max="30" step="0.5" value="0" id="sl-subdelay" oninput="updateDelay('sub', this.value)">
+      <div class="control-label" style="margin-top:8px">Level <span id="lbl-sublv">0 dB</span></div>
+      <input type="range" min="-20" max="0" step="1" value="0" id="sl-sublv" oninput="updateLevel('sub', this.value)">
+    </div>
+
+    <div class="section-title" style="margin-top:4px">Display Options</div>
+    <div class="toggle-row">
+      <div class="toggle-label">Coverage Arcs</div>
+      <div class="toggle on" id="tog-arcs" onclick="toggleDisplay('arcs')"></div>
+    </div>
+    <div class="toggle-row">
+      <div class="toggle-label">Seat Grid</div>
+      <div class="toggle on" id="tog-seats" onclick="toggleDisplay('seats')"></div>
+    </div>
+    <div class="toggle-row">
+      <div class="toggle-label">Delay Vectors</div>
+      <div class="toggle" id="tog-delays" onclick="toggleDisplay('delays')"></div>
+    </div>
+    <div class="toggle-row">
+      <div class="toggle-label">Iso-SPL Contours</div>
+      <div class="toggle" id="tog-contours" onclick="toggleDisplay('contours')"></div>
+    </div>
+
+    <div class="section-title" style="margin-top:4px">Room Acoustics</div>
+    <div class="control-group">
+      <div class="control-label">RT60 (estimate) <span id="lbl-rt60">0.8 s</span></div>
+      <input type="range" min="0.3" max="2.0" step="0.1" value="0.8" id="sl-rt60" oninput="updateRT60(this.value)">
+      <div style="font-size:9px;color:var(--text3);margin-top:3px">Carpet+gypsum: 0.7–1.0s typical</div>
+    </div>
+
+  </div>
+
+  <!-- CENTER CANVAS -->
+  <div class="canvas-area">
+    <div class="canvas-toolbar">
+      <div class="info-item">View: <span class="info-val" id="view-label">TOP VIEW — SPL Map @ 1kHz</span></div>
+      <div style="flex:1"></div>
+      <div class="cursor-info" id="cursor-info">Move cursor over map to read SPL</div>
+    </div>
+    <canvas id="mainCanvas"></canvas>
+    <div class="legend">
+      <span class="legend-title">SPL SCALE</span>
+      <div>
+        <canvas class="spl-bar" id="legendBar" width="140" height="10"></canvas>
+        <div class="legend-labels"><span id="spl-min-lbl">70 dB</span><span id="spl-mid-lbl">88 dB</span><span id="spl-max-lbl">106 dB</span></div>
+      </div>
+      <div class="legend-items">
+        <div class="legend-item"><div class="legend-swatch" style="background:#00d4ff"></div>T45-DSP</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#ff6b35"></div>GT508A</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#39d353"></div>MA118 Sub</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:rgba(255,255,255,0.3)"></div>Stage</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="section-title">Live Metrics</div>
+
+    <div class="metric-row">
+      <div class="metric-card">
+        <div class="metric-title">MAX SPL</div>
+        <div class="metric-value" id="m-maxspl">--</div><span class="metric-unit">dB</span>
+        <div class="metric-sub" id="m-maxpos">--</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">MIN SPL</div>
+        <div class="metric-value" id="m-minspl" style="color:var(--warn)">--</div><span class="metric-unit">dB</span>
+        <div class="metric-sub" id="m-minpos">--</div>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-title">SPL VARIANCE (uniformity)</div>
+      <div class="metric-value" id="m-variance" style="font-size:18px">--</div><span class="metric-unit">dB</span>
+      <div class="meter-bar"><div class="meter-fill" id="variance-bar" style="width:0%;background:var(--accent3)"></div></div>
+      <div class="metric-sub" id="m-variance-grade">Target: ≤ ±4 dB across mids</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-title">AVG SPL (audience zone)</div>
+      <div class="metric-value" id="m-avgspl">--</div><span class="metric-unit">dB</span>
+      <div class="metric-sub">Target: 85–95 dB for worship</div>
+    </div>
+
+    <div class="section-title" style="margin-top:10px">Measurement Positions</div>
+    <table class="point-table" id="point-table">
+      <thead>
+        <tr><th>Position</th><th>Dist</th><th>SPL</th><th>Status</th></tr>
+      </thead>
+      <tbody id="point-tbody"></tbody>
+    </table>
+
+    <div class="section-title" style="margin-top:10px">Delay Calculations</div>
+    <div class="math-block" id="delay-math">
+      c = 331.3 + 0.606×28 = 348.3 m/s<br>
+      1ms = 34.83 cm<br><br>
+      Loading delay calculations...
+    </div>
+    <table class="delay-table">
+      <thead>
+        <tr><th>Source</th><th>Dist</th><th>TOF</th><th>Set Delay</th></tr>
+      </thead>
+      <tbody id="delay-tbody"></tbody>
+    </table>
+
+    <div class="section-title" style="margin-top:10px">Speaker Specs</div>
+    <div class="metric-card" style="font-size:10px;line-height:1.8">
+      <div class="metric-title">T45-DSP (per box)</div>
+      <div style="color:var(--text2)">
+        Max SPL: <span style="color:var(--accent)">136 dB</span> peak, 130 dB cont.<br>
+        Freq: <span style="color:var(--accent)">63Hz–20kHz</span> (–6dB)<br>
+        H-dispersion: <span style="color:var(--accent)">120°</span><br>
+        V-dispersion: <span style="color:var(--accent)">array-dependent</span><br>
+        Sensitivity: <span style="color:var(--accent)">~102 dB/1W/1m</span><br>
+        Splay: 0.5°/1.5°/3°/5°/7°/10°
+      </div>
+    </div>
+    <div class="metric-card" style="font-size:10px;line-height:1.8">
+      <div class="metric-title">GT508A (front-fill)</div>
+      <div style="color:var(--text2)">
+        Max SPL: <span style="color:var(--accent2)">125 dB</span> peak<br>
+        Freq: <span style="color:var(--accent2)">65Hz–20kHz</span><br>
+        H-dispersion: <span style="color:var(--accent2)">90°</span><br>
+        V-dispersion: <span style="color:var(--accent2)">60°</span><br>
+        Sensitivity: <span style="color:var(--accent2)">~97 dB/1W/1m</span>
+      </div>
+    </div>
+    <div class="metric-card" style="font-size:10px;line-height:1.8">
+      <div class="metric-title">MA118 (subwoofer)</div>
+      <div style="color:var(--text2)">
+        Max SPL: <span style="color:var(--accent3)">134 dB</span> peak, 128 dB cont.<br>
+        Freq: <span style="color:var(--accent3)">32Hz–150Hz</span> (–6dB)<br>
+        LPF presets: <span style="color:var(--accent3)">80/100/120Hz</span><br>
+        Driver: <span style="color:var(--accent3)">18" custom, 4" VC</span><br>
+        Omnidirectional (bass freq.)
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:10px">Smaart RTA Pro Notes</div>
+    <div style="font-size:10px;color:var(--text2);line-height:1.7;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:8px 10px">
+      • Use <span style="color:var(--accent2)">Transfer Function</span> mode in Smaart for best results (needs reference + measurement mic)<br>
+      • Target curve: <span style="color:var(--accent)">±3 dB</span> from 200Hz–4kHz<br>
+      • SPL check positions match table on left<br>
+      • QU-6 pink noise → LR output → PA system<br>
+      • ECM-999 into QU-6 CH16 → USB to iPad<br>
+      • Set Smaart input to <span style="color:var(--accent)">QU-6 USB</span>, 48kHz<br>
+      • <span style="color:var(--warn)">Mute all monitors</span> before measuring
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  CONSTANTS & ROOM DATA (from floor plan measurements)
+// ══════════════════════════════════════════════════════════════
+
+const ROOM = {
+  // All in meters — from floor plan (mm values converted)
+  totalWidth:  24.325,  // 24325mm
+  totalDepth:  28.5,    // approx total building length
+  seatingDepth: 20.0,   // audience seating depth
+  stageDepth:  9.975,   // 9975mm right-side backstage+stage area
+  stageWidth:  24.325,
+  ceilingHeight: 8.0,   // given by user
+  mediaStationWidth: 4.15, // 4150mm left side
+  // Seating zone (from floor plan left labels)
+  // The seating area sits between ~4.15m from left wall and stage edge
+  seatZoneLeft: 4.15,   // media station takes 4150mm
+  seatZoneRight: 24.325, // to right wall
+  // Stage is on the RIGHT in the floor plan (EAST wall)
+  // Audience faces RIGHT (toward stage)
+  // In our coordinate system: x=0 is left wall, x=24.325 is right wall
+  // Stage starts at x = 24.325 - 9.975 = 14.35m from left
+  stageEdgeX: 14.35,    // front edge of stage (where audience sees)
+  // Row dimensions from bottom labels: 
+  // Col widths: 1587 2784 1628 1725 2350 1925 1925 2350 1725 2800 3104 (11 bays)
+  colWidths: [1.587, 2.784, 1.628, 1.725, 2.350, 1.925, 1.925, 2.350, 1.725, 2.800, 3.104],
+  // Row heights (Y): 3184 + 3000 + 3341 = 10.525 total height of left side zones
+  // Room is actually 24.325 wide  -- the left dim 9.975 is the DEPTH of stage zone on right
+  // Re-reading: total width label = 24325 (horizontal), right side = 9975 (vertical = depth)
+  // The room is LANDSCAPE: width 24.325m (left-right), depth ~28-29m (top-bottom in plan)
+  // Seating goes from top of plan down, stage is on far right
+  // Let's redefine: X = across width (0=left wall, 24.325=right wall)
+  // Y = depth (0=back wall, totalDepth=front where stage is)
+};
+
+// Speed of sound at 28°C (Mindoro)
+const C_SOUND = 331.3 + 0.606 * 28; // 348.3 m/s
+
+// Speaker positions (x=across, y=depth from back wall; stage at y=stageEdgeX)
+// Re-reading the plan: Stage is on the RIGHT side (east). The seating is to the left.
+// So: audience faces RIGHT. X axis = horizontal (north-south). Y axis = left-right depth.
+// Let's use:  x = room width direction (0=north wall, 24.325=south wall)
+//             y = room depth direction (0=back/west wall, 28.5=stage/east wall)
+
+// Stage edge Y position in our coord: stageEdgeY = totalDepth - stageDepth = 28.5 - 9.975 ≈ 18.525
+// But from floor plan the seating depth is ~20m from the back wall...
+// Simplify: let's use: Y=0 = back wall, Y=20 = front of seating / stage edge, Y=28.5 = far stage wall
+// Stage is at Y > 20m
+
+const STATE = {
+  view: 'top',
+  freq: 1000,
+  height: 1.2,
+  rt60: 0.8,
+  speakers: {
+    t45: { on: true, mountH: 5.5, tilt: -5, level: 0 },
+    ff:  { on: true, mountH: 1.8, tilt: -10, level: -6, delay: 0 },
+    sub: { on: true, mountH: 0.5, level: 0, delay: 0, lpf: 100 }
+  },
+  display: { arcs: true, seats: true, delays: false, contours: false },
+  mouseX: -1, mouseY: -1,
+  zoom: 1
+};
+
+// Physical speaker positions in room coordinates (meters)
+// X=0 left wall, X=24.325 right wall
+// Y=0 back wall, Y=20 = stage front edge
+// Stage occupies Y: 20–28.5, X: 0–24.325
+
+function getSpeakerPositions() {
+  // T45-DSP: 2 per side, hung at stage edge wings
+  // Left side wing: X ≈ 2m from left wall
+  // Right side wing: X ≈ 22.3m from left wall
+  // Y position: at stage edge ≈ 20m (they hang forward)
+  // Two boxes per side stacked vertically at Z = mountH and mountH + 0.293
+  const t45h = STATE.speakers.t45.mountH;
+  return {
+    t45L: [  // Left array: 2 boxes
+      { x: 2.2,  y: 20.0, z: t45h,        type:'t45', side:'L' },
+      { x: 2.2,  y: 20.0, z: t45h+0.293,  type:'t45', side:'L' }
+    ],
+    t45R: [  // Right array: 2 boxes
+      { x: 22.1, y: 20.0, z: t45h,        type:'t45', side:'R' },
+      { x: 22.1, y: 20.0, z: t45h+0.293,  type:'t45', side:'R' }
+    ],
+    ff: [   // Front fills: 2 units at stage lip, center-spaced
+      { x: 8.5,  y: 20.5, z: STATE.speakers.ff.mountH, type:'ff' },
+      { x: 15.8, y: 20.5, z: STATE.speakers.ff.mountH, type:'ff' }
+    ],
+    sub: [  // Subs: ground, near stage edges
+      { x: 5.0,  y: 20.3, z: 0.5, type:'sub' },
+      { x: 19.3, y: 20.3, z: 0.5, type:'sub' }
+    ]
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SPL PHYSICS ENGINE
+// ══════════════════════════════════════════════════════════════
+
+// Inverse square law: SPL at distance r from source with sensitivity Lw
+// SPL(r) = Lw_1m - 20*log10(r)  for r >= 1m
+// Lw_1m = max continuous SPL at 1m (on-axis)
+
+const SPECS = {
+  t45: { spl1m: 130, freqLow: 63, freqHigh: 20000, hAngle: 120, vAngle: 15, sensitivity: 102 },
+  ff:  { spl1m: 125, freqLow: 65, freqHigh: 20000, hAngle: 90,  vAngle: 60, sensitivity: 97 },
+  sub: { spl1m: 128, freqLow: 32, freqHigh: 150,   hAngle: 360, vAngle: 360, sensitivity: 98 }
+};
+
+// Directivity factor Q → DI (dB) for a given off-axis angle
+function directivityGain(type, hOffAxis, vOffAxis, freq) {
+  const spec = SPECS[type];
+  // Simplified directivity model: cosine-based with frequency dependence
+  // At high freq, pattern narrows; at low freq, it widens
+  let hRef = spec.hAngle / 2; // half-angle in degrees
+  let vRef = spec.vAngle / 2;
+
+  // Frequency scaling: pattern narrows as freq increases
+  let freqScale = 1;
+  if (type === 't45') {
+    freqScale = Math.max(0.5, Math.min(2.0, 1000 / Math.max(freq, 100)));
+    hRef = hRef; // T45 maintains 120° H reasonably well
+    vRef = 15 / freqScale; // V narrows with freq
+  } else if (type === 'ff') {
+    freqScale = Math.max(0.3, Math.min(1.5, 500 / Math.max(freq, 100)));
+    hRef = Math.min(90, hRef / freqScale);
+    vRef = Math.min(60, vRef / freqScale);
+  }
+  // Sub: omnidirectional at all frequencies below 150Hz
+  if (type === 'sub') return 0;
+
+  // Gaussian directivity model
+  const hGain = Math.exp(-0.5 * Math.pow(hOffAxis / (hRef / 1.665), 2));
+  const vGain = Math.exp(-0.5 * Math.pow(vOffAxis / (vRef / 1.665), 2));
+  const gain = hGain * vGain;
+  return 20 * Math.log10(Math.max(gain, 0.001)); // dB, min -60dB
+}
+
+// Room absorption coefficient at frequency (simplified Sabine model)
+// Carpet: high α at HF. Gypsum: moderate α.
+function getRoomAlpha(freq) {
+  // Weighted average absorption: carpet floor (~40% of surface) + gypsum ceiling (~40%) + walls (~20%)
+  const carpet = {63:0.02, 125:0.06, 250:0.14, 500:0.37, 1000:0.60, 2000:0.65, 4000:0.70, 8000:0.72};
+  const gypsum = {63:0.05, 125:0.07, 250:0.09, 500:0.10, 1000:0.08, 2000:0.07, 4000:0.05, 8000:0.04};
+  const walls  = {63:0.04, 125:0.05, 250:0.06, 500:0.07, 1000:0.09, 2000:0.10, 4000:0.10, 8000:0.10};
+  const freqKey = [63,125,250,500,1000,2000,4000,8000].reduce((a,b) => Math.abs(b-freq)<Math.abs(a-freq)?b:a);
+  return 0.40*carpet[freqKey] + 0.40*gypsum[freqKey] + 0.20*walls[freqKey];
+}
+
+// Room volume and surface area
+const ROOM_V = 24.325 * 28.5 * 8.0; // m³
+const ROOM_S = 2 * (24.325*28.5 + 24.325*8.0 + 28.5*8.0); // m²
+
+// Sabine RT60 calculation
+function calcRT60(freq) {
+  const alpha = getRoomAlpha(freq);
+  return 0.161 * ROOM_V / (alpha * ROOM_S);
+}
+
+// Critical distance: transition from direct to reverberant field
+// Dc = sqrt(Q * A / (16π))  where A = Sabine absorption area
+function criticalDistance(Q_dir, freq) {
+  const alpha = getRoomAlpha(freq);
+  const A = alpha * ROOM_S;
+  return Math.sqrt(Q_dir * A / (16 * Math.PI));
+}
+
+// SPL from a single speaker at a point (x, y) in room
+// speaker: {x, y, z, type, side}
+// point: {x, y, z}  (z = receiver height)
+function calcSPLFromSpeaker(spk, px, py, pz, freq, levelAdj) {
+  const spec = SPECS[spk.type];
+
+  // Frequency out of range → no contribution
+  if (spk.type === 'sub' && freq > spec.freqHigh * 1.5) return -Infinity;
+  if (spk.type === 'sub' && freq > 200) return -Infinity;
+  if (spk.type !== 'sub' && freq < 40) return -Infinity;
+
+  const dx = px - spk.x;
+  const dy = py - spk.y;
+  const dz = pz - spk.z;
+  const dist3d = Math.sqrt(dx*dx + dy*dy + dz*dz);
+  const dist2d = Math.sqrt(dx*dx + dy*dy);
+
+  if (dist3d < 0.5) return spec.spl1m + levelAdj;
+
+  // Horizontal angle: angle in XY plane relative to speaker aim direction
+  // Speaker aims "into the room" = toward decreasing Y (back of room)
+  // Aim direction vector: (0, -1, 0) for main arrays (aimed into seating)
+  // For left array aimed right: AimX = positive for coverage toward center
+  let aimH = 0; // horizontal aim angle relative to straight ahead
+  let aimV = 0; // vertical aim in degrees from horizontal
+
+  if (spk.type === 't45') {
+    // Aim: slightly inward for arrays. Left array aims slightly right (+10°), right array slightly left (-10°)
+    const inwardH = (spk.side === 'L') ? 10 : -10; // degrees toward center
+    const speakerAimX = Math.sin(inwardH * Math.PI/180);
+    const speakerAimY = -Math.cos(inwardH * Math.PI/180); // into room (negative Y = back)
+    // H off-axis = angle between (dx,dy) and aim vector
+    const dotH = dx*speakerAimX + dy*speakerAimY;
+    const crossH = dx*speakerAimY - dy*speakerAimX;
+    aimH = Math.abs(Math.atan2(crossH, Math.max(dotH, 0.01)) * 180/Math.PI);
+    // V off-axis = tilt angle vs receiver
+    const tiltRad = STATE.speakers.t45.tilt * Math.PI/180;
+    const speakerAimZ = Math.sin(tiltRad); // negative = downward
+    const speakerAimDist = Math.cos(tiltRad);
+    const actualVAngle = Math.atan2(dz, dist2d) * 180/Math.PI;
+    const targetVAngle = Math.atan2(speakerAimZ, speakerAimDist) * 180/Math.PI;
+    // flip: speaker is above, looking down, so positive tilt = downward
+    // if tilt is -5°, the beam points 5° below horizontal
+    // receiver is at z=1.2, speaker at z=5.5, so angle to receiver is negative (downward) relative to speaker
+    const receiverAngleFromSpeaker = Math.atan2(pz - spk.z, dist2d) * 180/Math.PI; // negative
+    const beamAngle = STATE.speakers.t45.tilt; // already negative for down
+    aimV = Math.abs(receiverAngleFromSpeaker - beamAngle);
+  } else if (spk.type === 'ff') {
+    // Front fill: aimed straight into seating (negative Y), flat horizontal
+    const tiltRad = STATE.speakers.ff.tilt * Math.PI/180;
+    aimH = Math.abs(Math.atan2(dx, -dy) * 180/Math.PI); // off-axis H
+    const receiverAngle = Math.atan2(pz - spk.z, dist2d) * 180/Math.PI;
+    aimV = Math.abs(receiverAngle - STATE.speakers.ff.tilt);
+  } else {
+    // Sub: omnidirectional
+    aimH = 0; aimV = 0;
+  }
+
+  // Direct sound SPL
+  const directSPL = spec.spl1m + levelAdj - 20*Math.log10(Math.max(dist3d, 1))
+                    + directivityGain(spk.type, aimH, aimV, freq);
+
+  return directSPL;
+}
+
+// Sum multiple SPL values (incoherent sum: power addition)
+function sumSPL(splArray) {
+  const validSPLs = splArray.filter(s => isFinite(s) && s > -100);
+  if (validSPLs.length === 0) return 0;
+  const totalPower = validSPLs.reduce((sum, s) => sum + Math.pow(10, s/10), 0);
+  return 10 * Math.log10(totalPower);
+}
+
+// Calculate SPL at a point from all active speakers
+function calcTotalSPL(px, py, pz, freq) {
+  const pos = getSpeakerPositions();
+  const spls = [];
+
+  if (STATE.speakers.t45.on) {
+    const all4 = [...pos.t45L, ...pos.t45R];
+    for (const spk of all4) {
+      spls.push(calcSPLFromSpeaker(spk, px, py, pz, freq, STATE.speakers.t45.level));
+    }
+  }
+  if (STATE.speakers.ff.on) {
+    for (const spk of pos.ff) {
+      spls.push(calcSPLFromSpeaker(spk, px, py, pz, freq, STATE.speakers.ff.level));
+    }
+  }
+  if (STATE.speakers.sub.on && freq <= STATE.speakers.sub.lpf * 1.2) {
+    for (const spk of pos.sub) {
+      spls.push(calcSPLFromSpeaker(spk, px, py, pz, freq, STATE.speakers.sub.level));
+    }
+  }
+
+  return sumSPL(spls);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SPL COLOR MAPPING
+// ══════════════════════════════════════════════════════════════
+
+const SPL_MIN = 65;
+const SPL_MAX = 110;
+
+function splToColor(spl, alpha=1) {
+  const t = Math.max(0, Math.min(1, (spl - SPL_MIN) / (SPL_MAX - SPL_MIN)));
+  // Color gradient: dark blue → blue → cyan → green → yellow → orange → red
+  let r, g, b;
+  if (t < 0.2) {
+    const s = t / 0.2;
+    r = Math.round(10 + s*20); g = Math.round(10 + s*60); b = Math.round(80 + s*120);
+  } else if (t < 0.4) {
+    const s = (t-0.2)/0.2;
+    r = Math.round(30 + s*20); g = Math.round(70 + s*100); b = Math.round(200 + s*55);
+  } else if (t < 0.55) {
+    const s = (t-0.4)/0.15;
+    r = Math.round(50 - s*30); g = Math.round(170 + s*85); b = Math.round(255 - s*200);
+  } else if (t < 0.7) {
+    const s = (t-0.55)/0.15;
+    r = Math.round(20 + s*235); g = Math.round(255 - s*55); b = Math.round(55 - s*40);
+  } else if (t < 0.85) {
+    const s = (t-0.7)/0.15;
+    r = Math.round(255); g = Math.round(200 - s*100); b = Math.round(15 - s*10);
+  } else {
+    const s = (t-0.85)/0.15;
+    r = 255; g = Math.round(100 - s*80); b = Math.round(5);
+  }
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// Draw legend gradient
+function drawLegend() {
+  const c = document.getElementById('legendBar');
+  const ctx = c.getContext('2d');
+  const w = c.width, h = c.height;
+  for (let i = 0; i < w; i++) {
+    const spl = SPL_MIN + (i/w)*(SPL_MAX-SPL_MIN);
+    ctx.fillStyle = splToColor(spl);
+    ctx.fillRect(i, 0, 1, h);
+  }
+  document.getElementById('spl-min-lbl').textContent = SPL_MIN + ' dB';
+  document.getElementById('spl-mid-lbl').textContent = Math.round((SPL_MIN+SPL_MAX)/2) + ' dB';
+  document.getElementById('spl-max-lbl').textContent = SPL_MAX + ' dB';
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CANVAS RENDERING
+// ══════════════════════════════════════════════════════════════
+
+let canvas, ctx;
+let splGrid = null;   // cached SPL computation
+let gridRes = 60;     // grid cells across room width (higher = slower but more accurate)
+let dirtyFlag = true;
+
+function resizeCanvas() {
+  canvas.width = canvas.clientWidth * window.devicePixelRatio;
+  canvas.height = canvas.clientHeight * window.devicePixelRatio;
+  dirtyFlag = true;
+  render();
+}
+
+// Room → canvas coordinate mapping
+function getRoomToCanvas() {
+  const cw = canvas.width, ch = canvas.height;
+  const dpr = window.devicePixelRatio;
+  const pad = 40 * dpr;
+  const scaleX = (cw - pad*2) / ROOM.totalWidth;
+  const scaleY = (ch - pad*2) / (ROOM.stageDepth + ROOM.seatingDepth + 1);
+  const scale = Math.min(scaleX, scaleY);
+  const offX = (cw - scale * ROOM.totalWidth) / 2;
+  const offY = pad;
+  return { scale, offX, offY };
+}
+
+function roomToCanvas(rx, ry) {
+  const m = getRoomToCanvas();
+  // ry=0 is back of seating (far from stage), ry=20 is stage edge
+  // In canvas: top = back of room (y=0), bottom = stage
+  return {
+    x: m.offX + rx * m.scale,
+    y: m.offY + ry * m.scale
+  };
+}
+
+function canvasToRoom(cx, cy) {
+  const m = getRoomToCanvas();
+  return {
+    x: (cx - m.offX) / m.scale,
+    y: (cy - m.offY) / m.scale
+  };
+}
+
+function drawTopView() {
+  const m = getRoomToCanvas();
+  const W = ROOM.totalWidth, D = ROOM.seatingDepth;
+  const stageD = ROOM.stageDepth;
+
+  // === Compute SPL grid ===
+  const cols = gridRes;
+  const rows = Math.round(gridRes * (D + stageD) / W);
+  const cellW = W / cols;
+  const cellH = (D + stageD) / rows;
+  const pz = STATE.height;
+  const freq = STATE.freq;
+
+  let maxSPL = -Infinity, minSPL = Infinity;
+  const grid = [];
+  for (let j = 0; j < rows; j++) {
+    grid[j] = [];
+    for (let i = 0; i < cols; i++) {
+      const px = (i + 0.5) * cellW;
+      const py = (j + 0.5) * cellH;
+      // Only compute SPL in seating zone (y < D)
+      let spl = 0;
+      if (py < D) {
+        spl = calcTotalSPL(px, py, pz, freq);
+        if (spl > maxSPL) maxSPL = spl;
+        if (spl < minSPL) minSPL = spl;
+      }
+      grid[j][i] = spl;
+    }
+  }
+
+  // Draw SPL heatmap
+  for (let j = 0; j < rows; j++) {
+    for (let i = 0; i < cols; i++) {
+      const px = i * cellW, py = j * cellH;
+      const c0 = roomToCanvas(px, py);
+      const c1 = roomToCanvas(px + cellW, py + cellH);
+      const spl = grid[j][i];
+      if (j * cellH < D) {
+        ctx.fillStyle = splToColor(spl, 0.92);
+      } else {
+        // Stage area: dark overlay
+        ctx.fillStyle = 'rgba(20,25,40,0.8)';
+      }
+      ctx.fillRect(c0.x, c0.y, c1.x - c0.x + 0.5, c1.y - c0.y + 0.5);
+    }
+  }
+
+  // === Room outline ===
+  ctx.strokeStyle = 'rgba(100,130,180,0.6)';
+  ctx.lineWidth = 1.5;
+  const r0 = roomToCanvas(0, 0);
+  const r1 = roomToCanvas(W, D + stageD);
+  ctx.strokeRect(r0.x, r0.y, r1.x - r0.x, r1.y - r0.y);
+
+  // Stage area
+  const sEdge = roomToCanvas(0, D);
+  const sFar  = roomToCanvas(W, D + stageD);
+  ctx.fillStyle = 'rgba(15,20,35,0.75)';
+  ctx.fillRect(sEdge.x, sEdge.y, sFar.x - sEdge.x, sFar.y - sEdge.y);
+  ctx.strokeStyle = 'rgba(255,107,53,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6,4]);
+  ctx.beginPath();
+  ctx.moveTo(sEdge.x, sEdge.y);
+  ctx.lineTo(sFar.x, sEdge.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // STAGE label
+  const sCenter = roomToCanvas(W/2, D + stageD*0.5);
+  ctx.fillStyle = 'rgba(255,107,53,0.7)';
+  ctx.font = `bold ${11 * window.devicePixelRatio}px 'Space Mono'`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('STAGE', sCenter.x, sCenter.y);
+
+  // Media station (left side)
+  const ms0 = roomToCanvas(0, 0);
+  const ms1 = roomToCanvas(ROOM.mediaStationWidth, D * 0.4);
+  ctx.fillStyle = 'rgba(0,100,150,0.25)';
+  ctx.fillRect(ms0.x, ms0.y, ms1.x - ms0.x, ms1.y - ms0.y);
+  ctx.strokeStyle = 'rgba(0,180,220,0.3)';
+  ctx.strokeRect(ms0.x, ms0.y, ms1.x - ms0.x, ms1.y - ms0.y);
+  ctx.fillStyle = 'rgba(0,180,220,0.6)';
+  ctx.font = `${8 * window.devicePixelRatio}px 'Space Mono'`;
+  ctx.fillText('FOH', (ms0.x+ms1.x)/2, (ms0.y+ms1.y)/2);
+
+  // === Seating grid ===
+  if (STATE.display.seats) {
+    // Draw seat dots based on floor plan layout
+    const seatRows = 8, seatCols = 16;
+    const seatingLeft = ROOM.mediaStationWidth + 0.5;
+    const seatingRight = ROOM.stageEdgeX - 0.5;
+    const seatingTop = 1.0;
+    const seatingBottom = D - 1.0;
+    ctx.fillStyle = 'rgba(150,170,200,0.35)';
+    for (let r = 0; r < seatRows; r++) {
+      for (let c = 0; c < seatCols; c++) {
+        const sx = seatingLeft + c * (seatingRight - seatingLeft) / (seatCols - 1);
+        const sy = seatingTop + r * (seatingBottom - seatingTop) / (seatRows - 1);
+        const cp = roomToCanvas(sx, sy);
+        ctx.beginPath();
+        ctx.arc(cp.x, cp.y, 2.5 * window.devicePixelRatio, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+  }
+
+  // === Iso-SPL contours ===
+  if (STATE.display.contours) {
+    const contourLevels = [75, 80, 85, 90, 95, 100];
+    for (const level of contourLevels) {
+      drawContour(grid, cols, rows, cellW, cellH, D + stageD, level);
+    }
+  }
+
+  // === Speaker positions ===
+  const pos = getSpeakerPositions();
+  const dpr = window.devicePixelRatio;
+
+  // T45-DSP arrays
+  if (STATE.speakers.t45.on) {
+    for (const spk of [...pos.t45L, ...pos.t45R]) {
+      const cp = roomToCanvas(spk.x, spk.y);
+      ctx.beginPath();
+      ctx.arc(cp.x, cp.y, 8*dpr, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(0,212,255,0.9)';
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    // Labels
+    const lLabel = roomToCanvas(2.2, 20.8);
+    const rLabel = roomToCanvas(22.1, 20.8);
+    ctx.fillStyle = '#00d4ff';
+    ctx.font = `bold ${9*dpr}px 'Space Mono'`;
+    ctx.textAlign = 'center';
+    ctx.fillText('T45×2', lLabel.x, lLabel.y);
+    ctx.fillText('T45×2', rLabel.x, rLabel.y);
+  }
+
+  // GT508A front fills
+  if (STATE.speakers.ff.on) {
+    for (const spk of pos.ff) {
+      const cp = roomToCanvas(spk.x, spk.y);
+      ctx.beginPath();
+      // Diamond shape for front fill
+      const r2 = 7*dpr;
+      ctx.moveTo(cp.x, cp.y - r2);
+      ctx.lineTo(cp.x + r2, cp.y);
+      ctx.lineTo(cp.x, cp.y + r2);
+      ctx.lineTo(cp.x - r2, cp.y);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255,107,53,0.9)';
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#ff6b35';
+    ctx.font = `bold ${9*dpr}px 'Space Mono'`;
+    ctx.fillText('GT508A', roomToCanvas(8.5, 21.3).x, roomToCanvas(8.5, 21.3).y);
+    ctx.fillText('GT508A', roomToCanvas(15.8, 21.3).x, roomToCanvas(15.8, 21.3).y);
+  }
+
+  // MA118 subs
+  if (STATE.speakers.sub.on) {
+    for (const spk of pos.sub) {
+      const cp = roomToCanvas(spk.x, spk.y);
+      ctx.beginPath();
+      ctx.rect(cp.x - 7*dpr, cp.y - 7*dpr, 14*dpr, 14*dpr);
+      ctx.fillStyle = 'rgba(57,211,83,0.9)';
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#39d353';
+    ctx.font = `bold ${9*dpr}px 'Space Mono'`;
+    ctx.fillText('MA118', roomToCanvas(5.0, 21.3).x, roomToCanvas(5.0, 21.3).y);
+    ctx.fillText('MA118', roomToCanvas(19.3, 21.3).x, roomToCanvas(19.3, 21.3).y);
+  }
+
+  // === Coverage arcs ===
+  if (STATE.display.arcs && STATE.speakers.t45.on) {
+    drawCoverageArc(pos.t45L[0], 120, 'rgba(0,212,255,0.2)', 'rgba(0,212,255,0.6)');
+    drawCoverageArc(pos.t45R[0], 120, 'rgba(0,212,255,0.2)', 'rgba(0,212,255,0.6)');
+  }
+  if (STATE.display.arcs && STATE.speakers.ff.on) {
+    for (const spk of pos.ff) {
+      drawCoverageArc(spk, 90, 'rgba(255,107,53,0.15)', 'rgba(255,107,53,0.5)');
+    }
+  }
+
+  // === Dimension annotations ===
+  drawDimensions();
+
+  // === Measurement cursor ===
+  if (STATE.mouseX >= 0 && STATE.mouseY >= 0) {
+    const mp = roomToCanvas(STATE.mouseX, STATE.mouseY);
+    ctx.beginPath();
+    ctx.arc(mp.x, mp.y, 6*dpr, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    const spl = calcTotalSPL(STATE.mouseX, STATE.mouseY, STATE.height, STATE.freq);
+    ctx.fillStyle = 'rgba(10,13,20,0.85)';
+    ctx.fillRect(mp.x + 10*dpr, mp.y - 14*dpr, 100*dpr, 30*dpr);
+    ctx.fillStyle = 'white';
+    ctx.font = `${9*dpr}px 'Space Mono'`;
+    ctx.textAlign = 'left';
+    ctx.fillText(`${STATE.mouseX.toFixed(1)}m, ${STATE.mouseY.toFixed(1)}m`, mp.x + 14*dpr, mp.y - 4*dpr);
+    ctx.fillStyle = splToColor(spl);
+    ctx.fillText(`${spl.toFixed(1)} dB SPL`, mp.x + 14*dpr, mp.y + 10*dpr);
+  }
+
+  // Update metrics
+  updateMetrics(grid, cols, rows, cellW, cellH, D);
+}
+
+function drawCoverageArc(spk, hAngle, fillColor, strokeColor) {
+  const cp = roomToCanvas(spk.x, spk.y);
+  const dpr = window.devicePixelRatio;
+  const m = getRoomToCanvas();
+  const radius = 15 * m.scale; // 15m coverage arc
+
+  // Aim direction: into room = negative Y direction in room coords = downward in canvas
+  // For left speaker: slight right inward angle; for right speaker: slight left
+  const inward = (spk.side === 'L') ? 10 : (spk.side === 'R' ? -10 : 0);
+  const aimAngle = -Math.PI/2 + inward * Math.PI/180; // pointing upward in canvas = into room (back of room)
+  const halfAng = (hAngle/2) * Math.PI/180;
+
+  ctx.beginPath();
+  ctx.moveTo(cp.x, cp.y);
+  ctx.arc(cp.x, cp.y, radius, aimAngle - halfAng, aimAngle + halfAng);
+  ctx.closePath();
+  ctx.fillStyle = fillColor;
+  ctx.fill();
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function drawContour(grid, cols, rows, cellW, cellH, totalD, level) {
+  // Simple marching-squares-inspired contour (draw edge cells where SPL crosses level)
+  ctx.strokeStyle = `rgba(255,255,255,0.25)`;
+  ctx.lineWidth = 0.8 * window.devicePixelRatio;
+  ctx.setLineDash([3,3]);
+  for (let j = 0; j < rows-1; j++) {
+    for (let i = 0; i < cols-1; i++) {
+      const a = grid[j][i], b = grid[j][i+1], c2 = grid[j+1][i], d = grid[j+1][i+1];
+      const above = [a>level, b>level, c2>level, d>level];
+      const mixed = above.some(v=>v) && above.some(v=>!v);
+      if (mixed) {
+        const p = roomToCanvas(i*cellW + cellW/2, j*cellH + cellH/2);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1.5*window.devicePixelRatio, 0, Math.PI*2);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.setLineDash([]);
+}
+
+function drawDimensions() {
+  const dpr = window.devicePixelRatio;
+  ctx.fillStyle = 'rgba(180,200,220,0.7)';
+  ctx.font = `${8*dpr}px 'Space Mono'`;
+  ctx.textAlign = 'center';
+  // Width annotation
+  const wTop = roomToCanvas(ROOM.totalWidth/2, -0.5);
+  ctx.fillText(`← ${ROOM.totalWidth}m →`, wTop.x, wTop.y);
+  // Depth annotation
+  ctx.save();
+  ctx.translate(roomToCanvas(-0.8, ROOM.seatingDepth/2).x, roomToCanvas(-0.8, ROOM.seatingDepth/2).y);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText(`${ROOM.seatingDepth}m seating`, 0, 0);
+  ctx.restore();
+}
+
+function drawSideView() {
+  const dpr = window.devicePixelRatio;
+  const roomDepth = ROOM.seatingDepth + ROOM.stageDepth; // ~29.5m
+  const roomH = ROOM.ceilingHeight; // 8m
+
+  // Map: x=depth (0=back, left in canvas), y=height (0=floor, bottom in canvas)
+  const padX = 50*dpr, padY = 30*dpr;
+  const cw = canvas.width, ch = canvas.height;
+  const scaleX = (cw - padX*2) / roomDepth;
+  const scaleY = (ch - padY*2) / roomH;
+  const scale = Math.min(scaleX, scaleY * 0.7);
+
+  function toC(depth, height) {
+    return {
+      x: padX + depth * scale,
+      y: (ch - padY) - height * scale * (ch - padY*2) / (roomH * scale)
+    };
+  }
+  function toC2(depth, height) {
+    const maxH = roomH;
+    return {
+      x: padX + depth * (cw - padX*2) / roomDepth,
+      y: (ch - padY) - height * (ch - padY*2) / maxH
+    };
+  }
+
+  // Floor
+  ctx.fillStyle = 'rgba(40,60,30,0.4)';
+  const fl = toC2(0,0), fr = toC2(roomDepth, 0), fc = toC2(roomDepth, 0.05);
+  ctx.fillRect(fl.x, fl.y - 3, fr.x - fl.x, 6);
+
+  // Ceiling
+  ctx.fillStyle = 'rgba(100,110,120,0.3)';
+  const cl = toC2(0, roomH), cr = toC2(roomDepth, roomH);
+  ctx.fillRect(cl.x, cl.y - 3, cr.x - cl.x, 6);
+
+  // Room outline
+  const p0 = toC2(0,0), p1 = toC2(roomDepth, 0), p2 = toC2(roomDepth, roomH), p3 = toC2(0, roomH);
+  ctx.strokeStyle = 'rgba(100,130,180,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(p0.x, p3.y, p1.x - p0.x, p0.y - p3.y);
+
+  // Stage edge line
+  const se = toC2(ROOM.seatingDepth, 0), seT = toC2(ROOM.seatingDepth, roomH);
+  ctx.strokeStyle = 'rgba(255,107,53,0.5)';
+  ctx.setLineDash([5,4]);
+  ctx.beginPath();
+  ctx.moveTo(se.x, se.y);
+  ctx.lineTo(seT.x, seT.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Labels
+  ctx.fillStyle = 'rgba(255,107,53,0.7)';
+  ctx.font = `bold ${9*dpr}px 'Space Mono'`;
+  ctx.textAlign = 'center';
+  ctx.fillText('STAGE', toC2(ROOM.seatingDepth + ROOM.stageDepth/2, roomH/2).x,
+                         toC2(ROOM.seatingDepth + ROOM.stageDepth/2, roomH/2).y);
+
+  // SPL side profile: compute SPL at horizontal center (x=12m) vs depth
+  const profX = ROOM.totalWidth/2;
+  const profZ = STATE.height;
+  const points = [];
+  for (let y = 0.5; y < ROOM.seatingDepth; y += 0.5) {
+    const spl = calcTotalSPL(profX, y, profZ, STATE.freq);
+    points.push({ depth: y, spl });
+  }
+
+  if (points.length > 1) {
+    const minS = Math.min(...points.map(p=>p.spl));
+    const maxS = Math.max(...points.map(p=>p.spl));
+    const profH = (ch - padY*2) * 0.35;
+    const profBase = ch - padY - 20*dpr;
+
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(0,212,255,0.8)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < points.length; i++) {
+      const pt = points[i];
+      const cx = toC2(pt.depth, 0).x;
+      const norm = (pt.spl - 65) / (110 - 65);
+      const cy = profBase - norm * profH;
+      if (i === 0) ctx.moveTo(cx, cy);
+      else ctx.lineTo(cx, cy);
+    }
+    ctx.stroke();
+
+    // Label
+    ctx.fillStyle = 'rgba(0,212,255,0.6)';
+    ctx.font = `${8*dpr}px 'Space Mono'`;
+    ctx.textAlign = 'left';
+    ctx.fillText('SPL @ center (1kHz)', padX, profBase - profH - 5*dpr);
+  }
+
+  // T45-DSP speaker position (side view)
+  if (STATE.speakers.t45.on) {
+    const spkDepth = ROOM.seatingDepth; // at stage edge
+    const spkH = STATE.speakers.t45.mountH;
+    const sp = toC2(spkDepth, spkH);
+    ctx.beginPath();
+    ctx.arc(sp.x, sp.y, 7*dpr, 0, Math.PI*2);
+    ctx.fillStyle = '#00d4ff';
+    ctx.fill();
+    // Beam line showing tilt
+    const tiltRad = STATE.speakers.t45.tilt * Math.PI/180;
+    const beamLen = ROOM.seatingDepth * 0.8;
+    const endDepth = spkDepth - beamLen;
+    const endH = spkH + beamLen * Math.tan(tiltRad);
+    const ep = toC2(Math.max(0, endDepth), Math.max(0, endH));
+    ctx.beginPath();
+    ctx.moveTo(sp.x, sp.y);
+    ctx.lineTo(ep.x, ep.y);
+    ctx.strokeStyle = 'rgba(0,212,255,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4,3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Vertical coverage arc
+    const vHalf = 15 * Math.PI/180; // ±15° vertical
+    const arc0 = tiltRad - vHalf, arc1 = tiltRad + vHalf;
+    const arcR = 8 * (toC2(1,0).x - toC2(0,0).x);
+    const aimAngle = Math.PI + tiltRad; // pointing left in side view
+    ctx.beginPath();
+    ctx.moveTo(sp.x, sp.y);
+    ctx.arc(sp.x, sp.y, arcR, aimAngle - vHalf, aimAngle + vHalf);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0,212,255,0.1)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,212,255,0.4)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Ear height line
+  const ear = toC2(0, STATE.height);
+  const earR = toC2(ROOM.seatingDepth, STATE.height);
+  ctx.strokeStyle = 'rgba(57,211,83,0.5)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([6,4]);
+  ctx.beginPath();
+  ctx.moveTo(ear.x, ear.y);
+  ctx.lineTo(earR.x, earR.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(57,211,83,0.7)';
+  ctx.font = `${8*dpr}px 'Space Mono'`;
+  ctx.textAlign = 'right';
+  ctx.fillText(`Ear ${STATE.height}m`, ear.x - 4, ear.y - 3*dpr);
+
+  // Dimension labels
+  ctx.fillStyle = 'rgba(180,200,220,0.6)';
+  ctx.font = `${8*dpr}px 'Space Mono'`;
+  ctx.textAlign = 'center';
+  ctx.fillText(`← ${ROOM.seatingDepth}m seating →`, toC2(ROOM.seatingDepth/2, -0.3).x, toC2(ROOM.seatingDepth/2, -0.3).y + 3*dpr);
+  ctx.save();
+  ctx.translate(padX - 20*dpr, toC2(0, roomH/2).y);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText(`${roomH}m`, 0, 0);
+  ctx.restore();
+}
+
+function drawFreqResponse() {
+  const dpr = window.devicePixelRatio;
+  const padX = 55*dpr, padY = 35*dpr;
+  const cw = canvas.width, ch = canvas.height;
+  const plotW = cw - padX - 20*dpr;
+  const plotH = ch - padY - 40*dpr;
+
+  // Background
+  ctx.fillStyle = 'rgba(10,13,20,0.5)';
+  ctx.fillRect(padX, padY, plotW, plotH);
+
+  // Grid
+  const dbMin = 50, dbMax = 110;
+  const dbRange = dbMax - dbMin;
+  ctx.strokeStyle = 'rgba(36,45,66,0.8)';
+  ctx.lineWidth = 0.7;
+  for (let db = 55; db <= dbMax; db += 5) {
+    const cy = padY + plotH - (db - dbMin)/dbRange * plotH;
+    ctx.beginPath(); ctx.moveTo(padX, cy); ctx.lineTo(padX+plotW, cy); ctx.stroke();
+    ctx.fillStyle = 'rgba(120,140,160,0.7)';
+    ctx.font = `${8*dpr}px 'Space Mono'`;
+    ctx.textAlign = 'right';
+    ctx.fillText(db + ' dB', padX - 4, cy + 3);
+  }
+
+  // Frequency axis (log scale)
+  const freqs = [20,31,63,125,250,500,1000,2000,4000,8000,16000,20000];
+  const fMin = 20, fMax = 20000;
+  function freqToX(f) {
+    return padX + (Math.log10(f/fMin) / Math.log10(fMax/fMin)) * plotW;
+  }
+  for (const f of freqs) {
+    const fx = freqToX(f);
+    ctx.strokeStyle = 'rgba(36,45,66,0.8)';
+    ctx.lineWidth = 0.7;
+    ctx.beginPath(); ctx.moveTo(fx, padY); ctx.lineTo(fx, padY+plotH); ctx.stroke();
+    const lbl = f >= 1000 ? (f/1000)+'k' : f+'';
+    ctx.fillStyle = 'rgba(120,140,160,0.7)';
+    ctx.font = `${8*dpr}px 'Space Mono'`;
+    ctx.textAlign = 'center';
+    ctx.fillText(lbl, fx, padY+plotH+12*dpr);
+  }
+
+  // Plot measurement positions
+  const positions = [
+    { name: 'Front (3m)', depth: 3.0,  x: ROOM.totalWidth/2, color: '#ff6b35' },
+    { name: 'Center (10m)', depth: 10.0, x: ROOM.totalWidth/2, color: '#00d4ff' },
+    { name: 'Rear (18m)', depth: 18.0, x: ROOM.totalWidth/2, color: '#39d353' },
+    { name: 'Side L (10m)', depth: 10.0, x: 4.0, color: '#ffd166' },
+  ];
+
+  const freqBands = [20,31,40,50,63,80,100,125,160,200,250,315,400,500,630,800,
+                     1000,1250,1600,2000,2500,3150,4000,5000,6300,8000,10000,12500,16000,20000];
+
+  for (const pos of positions) {
+    ctx.beginPath();
+    let first = true;
+    for (const f of freqBands) {
+      const spl = calcTotalSPL(pos.x, pos.depth, STATE.height, f);
+      if (!isFinite(spl)) continue;
+      const fx = freqToX(f);
+      const fy = padY + plotH - (spl - dbMin)/dbRange * plotH;
+      if (first) { ctx.moveTo(fx, fy); first=false; } else ctx.lineTo(fx, fy);
+    }
+    ctx.strokeStyle = pos.color;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  // Current frequency marker
+  const cfx = freqToX(STATE.freq);
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(cfx, padY); ctx.lineTo(cfx, padY+plotH); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // ±4dB target band
+  const avg = 88; // approximate target
+  const bandTop = padY + plotH - (avg+4 - dbMin)/dbRange * plotH;
+  const bandBot = padY + plotH - (avg-4 - dbMin)/dbRange * plotH;
+  ctx.fillStyle = 'rgba(57,211,83,0.08)';
+  ctx.fillRect(freqToX(200), bandTop, freqToX(4000)-freqToX(200), bandBot-bandTop);
+  ctx.strokeStyle = 'rgba(57,211,83,0.3)';
+  ctx.lineWidth = 0.7;
+  ctx.setLineDash([3,3]);
+  ctx.strokeRect(freqToX(200), bandTop, freqToX(4000)-freqToX(200), bandBot-bandTop);
+  ctx.setLineDash([]);
+
+  // Legend
+  ctx.font = `bold ${9*dpr}px 'Space Mono'`;
+  let lx = padX + 10*dpr;
+  for (const pos of positions) {
+    ctx.fillStyle = pos.color;
+    ctx.fillRect(lx, padY + 6*dpr, 20*dpr, 3*dpr);
+    ctx.fillText(pos.name, lx + 24*dpr, padY + 10*dpr);
+    lx += (ctx.measureText(pos.name).width + 38*dpr);
+  }
+
+  // Axis labels
+  ctx.fillStyle = 'rgba(130,150,170,0.8)';
+  ctx.font = `${8*dpr}px 'Space Mono'`;
+  ctx.textAlign = 'center';
+  ctx.fillText('FREQUENCY (Hz)', padX + plotW/2, padY + plotH + 26*dpr);
+  ctx.save();
+  ctx.translate(12*dpr, padY + plotH/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('SPL (dBSPL)', 0, 0);
+  ctx.restore();
+
+  ctx.fillStyle = 'rgba(57,211,83,0.5)';
+  ctx.font = `${8*dpr}px 'Space Mono'`;
+  ctx.textAlign = 'left';
+  ctx.fillText('±4dB target zone (200Hz–4kHz)', freqToX(200) + 4, bandTop - 4);
+}
+
+function drawDelayMap() {
+  const dpr = window.devicePixelRatio;
+  const pos = getSpeakerPositions();
+  const m = getRoomToCanvas();
+
+  // Draw room outline
+  const r0 = roomToCanvas(0,0), r1 = roomToCanvas(ROOM.totalWidth, ROOM.seatingDepth + ROOM.stageDepth);
+  ctx.strokeStyle = 'rgba(100,130,180,0.4)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(r0.x, r0.y, r1.x-r0.x, r1.y-r0.y);
+
+  // For each cell in seating zone, compute time of arrival difference from mains vs front-fill
+  const cols = 40, rows = 30;
+  const cellW = ROOM.totalWidth / cols;
+  const cellH = ROOM.seatingDepth / rows;
+
+  for (let j = 0; j < rows; j++) {
+    for (let i = 0; i < cols; i++) {
+      const px = (i+0.5)*cellW, py = (j+0.5)*cellH;
+      // Distance from nearest T45-DSP to this point
+      let minDistT45 = Infinity;
+      for (const spk of [...pos.t45L, ...pos.t45R]) {
+        const d = Math.sqrt((px-spk.x)**2 + (py-spk.y)**2);
+        if (d < minDistT45) minDistT45 = d;
+      }
+      const tof_main = minDistT45 / C_SOUND * 1000 + (STATE.speakers.t45.delay||0);
+
+      // Distance from nearest GT508A
+      let minDistFF = Infinity;
+      for (const spk of pos.ff) {
+        const d = Math.sqrt((px-spk.x)**2 + (py-spk.y)**2);
+        if (d < minDistFF) minDistFF = d;
+      }
+      const tof_ff = minDistFF / C_SOUND * 1000 + STATE.speakers.ff.delay;
+
+      // Delay difference
+      const deltaTms = tof_main - tof_ff; // positive = FF arrives BEFORE main
+      // Color: green if aligned (|delta| < 3ms), yellow if marginal, red if bad
+      let alpha = 0.85;
+      let col;
+      const absDelta = Math.abs(deltaTms);
+      if (absDelta < 3) col = `rgba(57,211,83,${alpha})`;
+      else if (absDelta < 8) col = `rgba(255,209,102,${alpha})`;
+      else col = `rgba(255,71,87,${alpha})`;
+
+      const c0 = roomToCanvas(i*cellW, j*cellH);
+      const c1 = roomToCanvas((i+1)*cellW, (j+1)*cellH);
+      ctx.fillStyle = col;
+      ctx.fillRect(c0.x, c0.y, c1.x-c0.x+0.5, c1.y-c0.y+0.5);
+    }
+  }
+
+  // Labels
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.font = `bold ${10*dpr}px 'Space Mono'`;
+  ctx.textAlign = 'center';
+  ctx.fillText('DELAY ALIGNMENT MAP (Main vs Front-Fill)', canvas.width/2, 18*dpr);
+  ctx.font = `${9*dpr}px 'Space Mono'`;
+  ctx.fillStyle = '#39d353';
+  ctx.fillText('■ Aligned (|Δ| < 3ms)', canvas.width/2 - 150*dpr, 32*dpr);
+  ctx.fillStyle = '#ffd166';
+  ctx.fillText('■ Marginal (3–8ms)', canvas.width/2, 32*dpr);
+  ctx.fillStyle = '#ff4757';
+  ctx.fillText('■ Misaligned (>8ms)', canvas.width/2 + 140*dpr, 32*dpr);
+
+  // Draw delay vector arrows
+  if (STATE.display.delays) {
+    for (const spk of pos.ff) {
+      const cp = roomToCanvas(spk.x, spk.y);
+      ctx.beginPath();
+      ctx.arc(cp.x, cp.y, 8*dpr, 0, Math.PI*2);
+      ctx.fillStyle = '#ff6b35';
+      ctx.fill();
+    }
+  }
+}
+
+function render() {
+  if (!canvas || !ctx) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#0a0d14';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const view = STATE.view;
+  if (view === 'top') drawTopView();
+  else if (view === 'side') drawSideView();
+  else if (view === 'freq') drawFreqResponse();
+  else if (view === 'delay') drawDelayMap();
+
+  updateDelayTable();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  METRICS UPDATE
+// ══════════════════════════════════════════════════════════════
+
+const MEAS_POINTS = [
+  { name: 'Front C 3m',  x: 12.2, y: 3.0  },
+  { name: 'Front L 3m',  x: 5.0,  y: 3.0  },
+  { name: 'Front R 3m',  x: 19.0, y: 3.0  },
+  { name: 'Center C 10m',x: 12.2, y: 10.0 },
+  { name: 'Center L 10m',x: 5.0,  y: 10.0 },
+  { name: 'Center R 10m',x: 19.0, y: 10.0 },
+  { name: 'Rear C 18m',  x: 12.2, y: 18.0 },
+  { name: 'Rear L 18m',  x: 5.0,  y: 18.0 },
+  { name: 'Rear R 18m',  x: 19.0, y: 18.0 },
+];
+
+function updateMetrics(grid, cols, rows, cellW, cellH, D) {
+  const freq = STATE.freq, pz = STATE.height;
+  // Only compute at measurement points (fast)
+  const spls = MEAS_POINTS.map(p => ({
+    ...p, spl: calcTotalSPL(p.x, p.y, pz, freq)
+  }));
+
+  const validSPLs = spls.map(p=>p.spl).filter(s=>isFinite(s) && s > 0);
+  if (validSPLs.length === 0) return;
+
+  const maxSPL = Math.max(...validSPLs);
+  const minSPL = Math.min(...validSPLs);
+  const avgSPL = validSPLs.reduce((a,b)=>a+b,0) / validSPLs.length;
+  const variance = maxSPL - minSPL;
+
+  document.getElementById('m-maxspl').textContent = maxSPL.toFixed(1);
+  document.getElementById('m-minspl').textContent = minSPL.toFixed(1);
+  document.getElementById('m-avgspl').textContent = avgSPL.toFixed(1);
+  document.getElementById('m-variance').textContent = '±' + (variance/2).toFixed(1);
+
+  const maxPoint = spls.find(p=>p.spl === maxSPL);
+  const minPoint = spls.find(p=>p.spl === minSPL);
+  document.getElementById('m-maxpos').textContent = maxPoint ? maxPoint.name : '';
+  document.getElementById('m-minpos').textContent = minPoint ? minPoint.name : '';
+
+  // Variance bar
+  const varPct = Math.min(100, variance / 20 * 100);
+  const varBar = document.getElementById('variance-bar');
+  varBar.style.width = varPct + '%';
+  if (variance <= 6) {
+    varBar.style.background = 'var(--accent3)';
+    document.getElementById('m-variance-grade').textContent = '✓ Good uniformity (≤±3dB)';
+  } else if (variance <= 10) {
+    varBar.style.background = 'var(--warn)';
+    document.getElementById('m-variance-grade').textContent = '⚠ Marginal uniformity';
+  } else {
+    varBar.style.background = 'var(--red)';
+    document.getElementById('m-variance-grade').textContent = '✗ Poor uniformity — adjust system';
+  }
+
+  // Point table
+  const tbody = document.getElementById('point-tbody');
+  tbody.innerHTML = '';
+  for (const p of spls) {
+    const tr = document.createElement('tr');
+    const statusClass = p.spl >= 85 ? 'spl-high' : (p.spl >= 75 ? 'spl-med' : 'spl-low');
+    const statusTxt = p.spl >= 85 ? 'OK' : (p.spl >= 75 ? 'LOW' : 'WEAK');
+    tr.innerHTML = `<td>${p.name}</td><td>${p.y}m</td>
+      <td><span class="spl-chip ${statusClass}">${p.spl.toFixed(1)}</span></td>
+      <td style="color:${p.spl>=85?'var(--accent3)':p.spl>=75?'var(--warn)':'var(--red)'}">${statusTxt}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function updateDelayTable() {
+  const pos = getSpeakerPositions();
+  const refPoint = { x: ROOM.totalWidth/2, y: 10.0, z: STATE.height };
+
+  function tof(spk) {
+    const d = Math.sqrt((refPoint.x-spk.x)**2 + (refPoint.y-spk.y)**2 + (refPoint.z-spk.z)**2);
+    return d / C_SOUND * 1000;
+  }
+
+  const mainTOF = Math.min(...pos.t45L.map(tof), ...pos.t45R.map(tof));
+  const ffTOF   = Math.min(...pos.ff.map(tof));
+  const subTOF  = Math.min(...pos.sub.map(tof));
+
+  const ffDelayNeeded = Math.max(0, mainTOF - ffTOF).toFixed(1);
+  const subDelayNeeded = Math.max(0, mainTOF - subTOF).toFixed(1);
+
+  document.getElementById('delay-math').innerHTML =
+    `c = 331.3 + 0.606×28 = ${C_SOUND.toFixed(1)} m/s\n` +
+    `1ms = ${(C_SOUND/1000*100).toFixed(1)} cm\n` +
+    `RT60 @ 1kHz = ${calcRT60(1000).toFixed(2)}s\n` +
+    `Dc @ 1kHz = ${criticalDistance(6, 1000).toFixed(1)}m\n\n` +
+    `Ref point: center, 10m depth`;
+
+  const tbody = document.getElementById('delay-tbody');
+  const rows = [
+    { src: 'T45-DSP (main)', dist: (mainTOF*C_SOUND/1000).toFixed(1), tof: mainTOF.toFixed(2), delay: '0.0 (reference)' },
+    { src: 'GT508A (fill)', dist: (ffTOF*C_SOUND/1000).toFixed(1),   tof: ffTOF.toFixed(2),   delay: `${ffDelayNeeded} ms` },
+    { src: 'MA118 (sub)',   dist: (subTOF*C_SOUND/1000).toFixed(1),  tof: subTOF.toFixed(2),  delay: `${subDelayNeeded} ms` },
+  ];
+  tbody.innerHTML = rows.map(r =>
+    `<tr><td style="color:var(--text)">${r.src}</td><td style="color:var(--accent)">${r.dist}m</td>` +
+    `<td style="color:var(--warn)">${r.tof}ms</td><td style="color:var(--accent3)">${r.delay}</td></tr>`
+  ).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CONTROLS
+// ══════════════════════════════════════════════════════════════
+
+function setView(v) {
+  STATE.view = v;
+  ['top','side','freq','delay'].forEach(id => {
+    const el = document.getElementById('vbtn-'+id);
+    if(el) el.classList.toggle('active', id===v);
+  });
+  const labels = { top:'TOP VIEW — SPL Map', side:'SIDE VIEW — Coverage Profile',
+                   freq:'FREQUENCY RESPONSE — All Positions', delay:'DELAY ALIGNMENT MAP' };
+  document.getElementById('view-label').textContent = labels[v] + (v==='top'||v==='delay' ? ` @ ${STATE.freq>=1000?STATE.freq/1000+'kHz':STATE.freq+'Hz'}` : '');
+  render();
+}
+
+function setFreq(f) {
+  STATE.freq = f;
+  document.querySelectorAll('.freq-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.textContent) === f || b.textContent === (f>=1000?f/1000+'kHz':f+'Hz'));
+  });
+  document.getElementById('view-label').textContent = `TOP VIEW — SPL Map @ ${f>=1000?f/1000+'kHz':f+'Hz'}`;
+  render();
+}
+
+function updateHeight(v) {
+  STATE.height = parseFloat(v);
+  document.getElementById('lbl-height').textContent = v + ' m';
+  render();
+}
+function updateT45Height(v) {
+  STATE.speakers.t45.mountH = parseFloat(v);
+  document.getElementById('lbl-t45h').textContent = v + ' m';
+  render();
+}
+function updateT45Tilt(v) {
+  STATE.speakers.t45.tilt = parseFloat(v);
+  document.getElementById('lbl-t45tilt').textContent = v + '°';
+  render();
+}
+function updateFFHeight(v) {
+  STATE.speakers.ff.mountH = parseFloat(v);
+  document.getElementById('lbl-ffh').textContent = v + ' m';
+  render();
+}
+function updateFFTilt(v) {
+  STATE.speakers.ff.tilt = parseFloat(v);
+  document.getElementById('lbl-fftilt').textContent = v + '°';
+  render();
+}
+function updateDelay(spk, v) {
+  STATE.speakers[spk].delay = parseFloat(v);
+  document.getElementById('lbl-'+spk+'delay').textContent = parseFloat(v).toFixed(1) + ' ms';
+  render();
+}
+function updateLevel(spk, v) {
+  STATE.speakers[spk].level = parseFloat(v);
+  document.getElementById('lbl-'+spk+'lv').textContent = v + ' dB';
+  render();
+}
+function updateSubLPF(v) {
+  STATE.speakers.sub.lpf = parseInt(v);
+  document.getElementById('lbl-sublpf').textContent = v + 'Hz';
+  render();
+}
+function updateRT60(v) {
+  STATE.rt60 = parseFloat(v);
+  document.getElementById('lbl-rt60').textContent = v + ' s';
+  render();
+}
+
+function toggleSpeaker(spk) {
+  STATE.speakers[spk].on = !STATE.speakers[spk].on;
+  const el = document.getElementById('tog-'+spk);
+  if (STATE.speakers[spk].on) {
+    el.classList.add('on');
+    if(spk==='ff') el.classList.add('on-orange');
+    if(spk==='sub') el.classList.add('on-green');
+  } else {
+    el.classList.remove('on','on-orange','on-green');
+  }
+  render();
+}
+
+function toggleDisplay(item) {
+  STATE.display[item] = !STATE.display[item];
+  const el = document.getElementById('tog-'+item);
+  el.classList.toggle('on', STATE.display[item]);
+  render();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MOUSE / TOUCH EVENTS
+// ══════════════════════════════════════════════════════════════
+
+function getMouseRoomCoords(e) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio;
+  const cx = (e.clientX - rect.left) * dpr;
+  const cy = (e.clientY - rect.top) * dpr;
+  return canvasToRoom(cx, cy);
+}
+
+function onMouseMove(e) {
+  const rp = getMouseRoomCoords(e);
+  const inRoom = rp.x >= 0 && rp.x <= ROOM.totalWidth && rp.y >= 0 && rp.y <= ROOM.seatingDepth;
+  if (inRoom && STATE.view === 'top') {
+    STATE.mouseX = rp.x;
+    STATE.mouseY = rp.y;
+    const spl = calcTotalSPL(rp.x, rp.y, STATE.height, STATE.freq);
+    document.getElementById('cursor-info').textContent =
+      `X: ${rp.x.toFixed(2)}m  Y: ${rp.y.toFixed(2)}m  SPL: ${spl.toFixed(1)} dBSPL @ ${STATE.freq>=1000?STATE.freq/1000+'kHz':STATE.freq+'Hz'}`;
+    render();
+  } else {
+    STATE.mouseX = -1; STATE.mouseY = -1;
+    document.getElementById('cursor-info').textContent = 'Move cursor over seating zone to read SPL';
+    if (STATE.view === 'top') render();
+  }
+}
+
+function onMouseLeave() {
+  STATE.mouseX = -1; STATE.mouseY = -1;
+  document.getElementById('cursor-info').textContent = 'Move cursor over map to read SPL';
+  if (STATE.view === 'top') render();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════
+
+window.addEventListener('load', () => {
+  canvas = document.getElementById('mainCanvas');
+  ctx = canvas.getContext('2d');
+
+  canvas.addEventListener('mousemove', onMouseMove);
+  canvas.addEventListener('mouseleave', onMouseLeave);
+  window.addEventListener('resize', resizeCanvas);
+
+  drawLegend();
+  setFreq(1000);
+  resizeCanvas();
+});
+</script>
+</body>
+</html>
